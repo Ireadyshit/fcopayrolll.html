@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FOR CREW ONLY | Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Brand Colors */
+      --brand-blue: #00509E; 
+      --brand-light-blue: #0077C8;
+      --brand-cyan: #00B4D8;
+      --bg-light: #F0F4F8;
+      --surface-white: #FFFFFF;
+      --text-dark: #1E293B;
+      --text-muted: #64748B;
+      --border-color: #E2E8F0;
+      --danger: #EF4444;
+      --success: #10B981;
+      
+      --font-heading: 'Montserrat', sans-serif;
+      --font-body: 'Open Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+      min-height: 100vh;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* --- LOGO STYLING --- */
+    /* Updated: Removed solid blue background so white logo line art shows clearly with dark drop shadow */
+    .brand-logo {
+      max-width: 150px; 
+      height: auto; 
+      margin-bottom: 20px;
+      filter: drop-shadow(0px 2px 8px rgba(0, 34, 68, 0.4));
+    }
+    .top-bar .brand-logo { 
+      max-width: 100px; 
+      margin-bottom: 0;
+      filter: drop-shadow(0px 2px 4px rgba(0, 80, 158, 0.3));
+    }
+
+    /* --- LOGIN OVERLAY --- */
+    #loginScreen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, #00509E 0%, #002244 100%);
+      display: flex; justify-content: center; align-items: center; z-index: 100;
+    }
+    .login-box {
+      background: var(--surface-white); padding: 40px; border-radius: 16px;
+      text-align: center; width: 100%; max-width: 400px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .login-box p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;}
+    .login-box input {
+      width: 100%; background: var(--bg-light); border: 2px solid var(--border-color); color: var(--text-dark);
+      padding: 14px; border-radius: 8px; font-family: var(--font-body); margin-bottom: 15px; outline: none; font-size: 1rem; transition: all 0.3s ease;
+    }
+    .login-box input:focus { border-color: var(--brand-blue); background: #fff; transform: translateY(-2px); }
+    .auth-btns { display: flex; gap: 10px; margin-top: 10px; }
+    .auth-btns button { flex: 1; }
+    #loginError { color: var(--danger); font-size: 0.85rem; margin-top: 15px; height: 15px; font-weight: 600; }
+
+    /* --- LOADING SCREEN --- */
+    #loaderScreen {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: linear-gradient(135deg, #002244 0%, #00509E 100%);
+      display: none; flex-direction: column; justify-content: center; align-items: center;
+      z-index: 9999; transition: opacity 0.6s ease; overflow: hidden;
+    }
+    .loader-title {
+      font-family: var(--font-heading); color: #fff; font-size: 1.5rem; font-weight: 800;
+      margin-bottom: 20px; letter-spacing: 2px; position: relative; z-index: 10;
+    }
+    .water-bar-container {
+      width: 300px; height: 24px; background: rgba(255,255,255,0.1);
+      border-radius: 12px; overflow: hidden; border: 2px solid rgba(255,255,255,0.3);
+      position: relative; box-shadow: 0 0 15px rgba(0, 180, 216, 0.2) inset; z-index: 10;
+    }
+    .water-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--brand-cyan), var(--brand-light-blue));
+      border-radius: 10px; transition: width 0.2s ease-out; position: relative; overflow: hidden;
+    }
+    .water-fill::after {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: wave 1.5s infinite linear;
+    }
+    @keyframes wave {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* --- CRUISE SHIP ANIMATION --- */
+    #cruiseShip {
+      position: absolute; 
+      top: 50%; 
+      left: -1200px; 
+      transform: translateY(-50%); 
+      width: 1000px; 
+      height: auto; 
+      object-fit: contain;
+      z-index: 10000; 
+      pointer-events: none;
+      filter: drop-shadow(0 30px 50px rgba(0,0,0,0.6));
+    }
+    .fly-by {
+      animation: shipFly 2.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    @keyframes shipFly {
+      0% { left: -1200px; transform: translateY(-50%) rotate(-1deg); }
+      50% { transform: translateY(-52%) rotate(0deg); }
+      100% { left: 100vw; transform: translateY(-50%) rotate(1deg); }
+    }
+
+    /* --- ANIMATIONS & COMPONENTS --- */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 0 rgba(0, 180, 216, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(0, 180, 216, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 180, 216, 0); }
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .animate-up { animation: fadeUp 0.6s ease-out forwards; opacity: 0; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+
+    /* --- BUTTONS --- */
+    button {
+      background: var(--surface-white); border: 2px solid var(--border-color); color: var(--text-dark);
+      padding: 10px 20px; border-radius: 8px; font-family: var(--font-heading); font-size: 0.8rem;
+      font-weight: 700; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase;
+    }
+    button:hover { border-color: var(--brand-blue); color: var(--brand-blue); transform: translateY(-2px); }
+    button.primary { background: var(--brand-blue); color: #fff; border: 2px solid var(--brand-blue); }
+    button.primary:hover { background: var(--brand-light-blue); border-color: var(--brand-light-blue); color: #fff; box-shadow: 0 8px 15px rgba(0, 80, 158, 0.2); }
+    button.accent { background: var(--brand-cyan); color: #fff; border: 2px solid var(--brand-cyan); }
+    button.accent:hover { background: #0096B4; border-color: #0096B4; color: #fff; box-shadow: 0 8px 15px rgba(0, 180, 216, 0.3); }
+    button.danger-text { background: transparent; border: none; color: var(--text-muted); padding: 0; font-size: 1.2rem; }
+    button.danger-text:hover { color: var(--danger); border: none; transform: scale(1.2) rotate(90deg); }
+
+    /* --- TUTORIAL MODAL --- */
+    #tutorialModal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 34, 68, 0.8); backdrop-filter: blur(8px);
+      display: none; justify-content: center; align-items: center; z-index: 200; padding: 20px;
+    }
+    .tutorial-content {
+      background: var(--surface-white); border-radius: 16px;
+      padding: 40px; max-width: 500px; width: 100%; box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+      animation: popIn 0.4s ease-out forwards;
+    }
+    .tutorial-content h3 { color: var(--brand-blue); font-family: var(--font-heading); font-size: 1.6rem; margin-bottom: 15px; font-weight: 800; }
+    .tutorial-content p { color: var(--text-muted); margin-bottom: 20px; font-size: 1rem; }
+    .tutorial-content ul { margin-left: 20px; color: var(--text-dark); margin-bottom: 25px; font-size: 0.95rem; }
+    .tutorial-content li { margin-bottom: 12px; }
+    .tutorial-content li span { color: var(--brand-light-blue); font-weight: 700; }
+
+    /* --- MAIN APP --- */
+    .container { max-width: 1000px; margin: 0 auto; display: none; padding: 40px 20px; }
+    .top-bar { 
+      display: flex; justify-content: space-between; align-items: center; 
+      background: var(--surface-white); padding: 15px 30px; border-radius: 16px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 30px;
+    }
+    .user-badge { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 20px;}
+    
+    /* Admin Dashboard */
+    #adminDashboard { display: none; background: var(--brand-blue); color: #fff; padding: 30px; margin-bottom: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,80,158,0.2); }
+    #adminDashboard h2 { color: var(--brand-cyan); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px; font-family: var(--font-heading); font-weight: 800; }
+    .admin-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 1rem; font-weight: 600; }
+
+    /* Cards & Inputs */
+    .grid { display: grid; grid-template-columns: 1fr; gap: 25px; margin-bottom: 25px; }
+    @media(min-width: 768px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+    .card { background: var(--surface-white); border: none; border-radius: 16px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); transition: transform 0.3s ease; }
+    .card:hover { transform: translateY(-5px); }
+    .card h2 { font-family: var(--font-heading); font-size: 1.2rem; font-weight: 800; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; color: var(--brand-blue); }
+    .input-group { margin-bottom: 20px; }
+    .input-group label { display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 700; }
+    input[type="text"], input[type="number"] {
+      width: 100%; background: var(--bg-light); border: 2px solid transparent; color: var(--text-dark);
+      padding: 12px; border-radius: 8px; font-family: var(--font-body); font-size: 0.95rem; outline: none; transition: all 0.3s ease; font-weight: 600;
+    }
+    input:focus { border-color: var(--brand-light-blue); background: #fff; box-shadow: 0 4px 10px rgba(0, 119, 200, 0.1); }
+    .checkbox-wrap { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: color 0.2s; }
+    .checkbox-wrap:hover { color: var(--brand-blue); }
+    input[type="checkbox"] { accent-color: var(--brand-light-blue); width: 18px; height: 18px; cursor: pointer; }
+
+    /* Lists */
+    .list-header { display: grid; gap: 15px; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 2px solid var(--bg-light); }
+    .list-row { display: grid; gap: 15px; align-items: center; margin-bottom: 12px; animation: fadeUp 0.3s ease forwards; }
+    .shift-layout { grid-template-columns: 1fr 1fr 1fr 1fr 40px; }
+    .expense-layout { grid-template-columns: 1.5fr 1fr 40px; }
+    .calc-value { font-weight: 700; color: var(--success); font-size: 1.1rem; }
+    @media(max-width: 600px) {
+      .shift-layout { grid-template-columns: 1fr 1fr; }
+      .shift-layout > *:nth-child(5) { grid-column: 1 / -1; text-align: right; }
+      .list-header { display: none; }
+    }
+
+    /* Dashboard Stats */
+    .stat-box { background: var(--bg-light); border-radius: 12px; padding: 20px; text-align: center; transition: all 0.3s ease; border: 1px solid transparent; }
+    .stat-box:hover { background: #fff; border-color: var(--brand-cyan); box-shadow: 0 10px 20px rgba(0,180,216,0.1); }
+    .stat-box .title { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px; }
+    .stat-box .value { font-family: var(--font-heading); font-size: 2rem; font-weight: 800; color: var(--brand-blue); }
+    .progress-bar-bg { height: 10px; background: var(--border-color); border-radius: 5px; overflow: hidden; margin-top: 25px; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--brand-light-blue), var(--brand-cyan)); width: 0%; transition: width 0.8s cubic-bezier(0.65, 0, 0.35, 1); }
+    .progress-fill.active { animation: pulseGlow 2s infinite; border-radius: 5px; }
+    .progress-text { text-align: right; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-top: 10px;}
+  </style>
+</head>
+<body>
+
+  <div id="loginScreen">
+    <div class="login-box">
+      <img src="images-removebg-preview.png" alt="Crew Only Logo" class="brand-logo" id="mainLogo">
+      
+      <p>Crew Portal Access</p>
+      <input type="text" id="usernameIn" placeholder="Crew ID (Username)" autocomplete="off">
+      <input type="password" id="passwordIn" placeholder="PIN (Password)" autocomplete="off">
+      <div class="auth-btns">
+        <button class="primary" id="loginBtn">Log In</button>
+        <button id="registerBtn">Register</button>
+      </div>
+      <div id="loginError"></div>
+    </div>
+  </div>
+
+  <div id="loaderScreen">
+    <div class="loader-title">AUTHENTICATING & LOADING</div>
+    <div class="water-bar-container">
+      <div class="water-fill" id="waterFill"></div>
+    </div>
+    
+    <img id="cruiseShip" src="carnival-cruise-png-11553963614rm1rykcmba-removebg-preview.png" alt="Massive Cruise Ship">
+    
+  </div>
+
+  <div id="tutorialModal">
+    <div class="tutorial-content">
+      <h3>Welcome to the Portal</h3>
+      <p>Here is a quick guide to logging your shifts and expenses:</p>
+      <ul>
+        <li><span>1. Setup:</span> Set your Hourly Rate and Target Goal. Toggle "Auto-Tax" if you want 15% automatically deducted from your gross pay.</li>
+        <li><span>2. Time Magic:</span> Click "+ Add Shift". Type your times (e.g., "9:03 AM"). The system instantly rounds it to the nearest 10 minutes for you.</li>
+        <li><span>3. Expenses:</span> Log any port expenses or deliveries in the Liabilities section. It subtracts directly from your total.</li>
+        <li><span>4. Track:</span> Watch your progress bar fill up as you hit your target goal!</li>
+      </ul>
+      <button class="primary" id="closeTutorialBtn" style="width: 100%;">Got it, let's work</button>
+    </div>
+  </div>
+
+  <div class="container" id="appContainer">
+    <div class="top-bar animate-up">
+      <img src="images-removebg-preview.png" alt="Crew Only Logo" class="brand-logo" id="headerLogo">
+      
+      <div class="user-badge">
+        <button id="helpBtn" style="padding: 6px 12px; border-radius: 50%; font-size: 1rem;">?</button>
+        <span id="userBadge">ID: GUEST</span>
+        <button id="logoutBtn">Log Out</button>
+      </div>
+    </div>
+
+    <div id="adminDashboard" class="animate-up delay-1">
+      <h2>Manager Overview: Payroll Tracker</h2>
+      <div id="adminList"></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card animate-up delay-1">
+        <h2>Job Settings</h2>
+        <div class="grid grid-2">
+          <div class="input-group">
+            <label>Hourly Rate ($)</label>
+            <input type="number" id="hourlyRate" step="0.01" value="0">
+          </div>
+          <div class="input-group">
+            <label>Target Goal ($)</label>
+            <input type="number" id="savingsTarget" step="0.01" value="0">
+          </div>
+        </div>
+        <label class="checkbox-wrap">
+          <input type="checkbox" id="taxToggle"> Apply 15% Tax Estimate
+        </label>
+      </div>
+
+      <div class="card animate-up delay-1">
+        <h2>Financial Snapshot</h2>
+        <div class="grid grid-2" style="gap: 15px; margin-bottom: 0;">
+          <div class="stat-box">
+            <div class="title">Net Cash</div>
+            <div class="value" id="dashNet">$0.00</div>
+          </div>
+          <div class="stat-box">
+            <div class="title">Goal Status</div>
+            <div class="value" id="dashLeft" style="color: var(--brand-cyan);">$0.00</div>
+          </div>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <div class="progress-text" id="progressText">0%</div>
+      </div>
+    </div>
+
+    <div class="card animate-up delay-2">
+      <h2>Logged Shifts <button class="primary" id="addShiftBtn">+ Add Shift</button></h2>
+      <div class="list-header shift-layout">
+        <div>Date</div><div>Clock In</div><div>Clock Out</div><div>Net Pay</div><div></div>
+      </div>
+      <div id="shiftsContainer"></div>
+    </div>
+
+    <div class="card animate-up delay-3">
+      <h2>Port Expenses <button class="accent" id="addExpenseBtn">+ Add Expense</button></h2>
+      <div class="list-header expense-layout">
+        <div>Description</div><div>Amount</div><div></div>
+      </div>
+      <div id="expensesContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    /* --- DATABASES & AUTH --- */
+    let currentUser = null;
+    let usersDb = JSON.parse(localStorage.getItem("fco_v26_users")) || { "admin": "admin123" };
+    let dataDb = JSON.parse(localStorage.getItem("fco_v26_data")) || {};
+
+    const loginScreen = document.getElementById("loginScreen"); 
+    const loaderScreen = document.getElementById("loaderScreen");
+    const appContainer = document.getElementById("appContainer");
+    const uIn = document.getElementById("usernameIn"); 
+    const pIn = document.getElementById("passwordIn"); 
+    const err = document.getElementById("loginError");
+
+    /* Login Handlers trigger the Loading Sequence first */
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      let u = uIn.value.trim().toLowerCase(), p = pIn.value.trim();
+      if(usersDb[u] && usersDb[u] === p) { 
+        triggerLoadingSequence(u); 
+      } else { 
+        err.textContent = "Access Denied: Invalid Credentials."; 
+      }
+    });
+
+    document.getElementById("registerBtn").addEventListener("click", () => {
+      let u = uIn.value.trim().toLowerCase(), p = pIn.value.trim();
+      if(!u || !p) { err.textContent = "Error: Input required."; return; }
+      if(usersDb[u]) { err.textContent = "Error: ID already in system."; return; }
+      usersDb[u] = p; localStorage.setItem("fco_v26_users", JSON.stringify(usersDb)); 
+      triggerLoadingSequence(u);
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      saveData(); currentUser = null; 
+      appContainer.style.display = "none"; 
+      loginScreen.style.display = "flex"; 
+      uIn.value = ""; pIn.value = ""; err.textContent = "";
+    });
+
+    /* --- LOADING SEQUENCE LOGIC --- */
+    function triggerLoadingSequence(user) {
+      loginScreen.style.display = 'none';
+      loaderScreen.style.display = 'flex';
+      loaderScreen.style.opacity = '1';
+      
+      const fill = document.getElementById('waterFill');
+      const ship = document.getElementById('cruiseShip');
+      
+      fill.style.width = '0%';
+      ship.classList.remove('fly-by');
+      void ship.offsetWidth;
+      
+      let progress = 0;
+      let loadingInterval = setInterval(() => {
+        progress += Math.floor(Math.random() * 20) + 5; 
+        if (progress > 100) progress = 100;
+        
+        fill.style.width = progress + '%';
+        
+        if (progress === 100) {
+          clearInterval(loadingInterval);
+          
+          setTimeout(() => {
+            ship.classList.add('fly-by');
+            
+            setTimeout(() => {
+              loaderScreen.style.opacity = '0';
+              setTimeout(() => {
+                loaderScreen.style.display = 'none';
+                startSession(user);
+              }, 600); 
+            }, 2800); 
+          }, 400); 
+        }
+      }, 150);
+    }
+
+    /* --- SESSION START --- */
+    function startSession(user) {
+      currentUser = user; 
+      appContainer.style.display = "block";
+      document.getElementById("userBadge").textContent = `ID: ${user}`;
+      
+      document.querySelectorAll('.animate-up').forEach(el => {
+        el.style.animation = 'none';
+        el.offsetHeight; 
+        el.style.animation = null; 
+      });
+
+      if(user === 'admin') {
+        document.getElementById("adminDashboard").style.display = "block";
+        buildAdminDashboard();
+      } else {
+        document.getElementById("adminDashboard").style.display = "none";
+        
+        if (!localStorage.getItem(`tut_seen_${user}`)) {
+          document.getElementById('tutorialModal').style.display = 'flex';
+          localStorage.setItem(`tut_seen_${user}`, 'true');
+        }
+      }
+      loadData();
+    }
+
+    /* --- TUTORIAL LOGIC --- */
+    const tutModal = document.getElementById('tutorialModal');
+    document.getElementById('helpBtn').addEventListener('click', () => { tutModal.style.display = 'flex'; });
+    document.getElementById('closeTutorialBtn').addEventListener('click', () => { tutModal.style.display = 'none'; });
+
+    function buildAdminDashboard() {
+      const list = document.getElementById("adminList"); list.innerHTML = "";
+      for(let u in usersDb) {
+        if(u === 'admin') continue;
+        let uData = dataDb[u]; let tEarn = 0;
+        if(uData && uData.shifts) {
+            uData.shifts.forEach(s => {
+                let i = timeToMins(s.in), o = timeToMins(s.out);
+                if(i!=null && o!=null) {
+                    let d = o - i; if(d<0) d+=24*60;
+                    let earn = (d/60) * (parseFloat(uData.rate)||0);
+                    if(uData.tax) earn *= 0.85;
+                    tEarn += earn;
+                }
+            });
+        }
+        list.innerHTML += `<div class="admin-row"><span>CREW MEMBER: ${u.toUpperCase()}</span><span style="color: #fff;">${fmtMoney(tEarn)}</span></div>`;
+      }
+      if(list.innerHTML === "") list.innerHTML = `<div class="admin-row" style="color:rgba(255,255,255,0.6);">No personnel registered.</div>`;
+    }
+
+    /* --- MATH & ROUNDING --- */
+    const fmtMoney = (n) => n.toLocaleString(undefined, { style: "currency", currency: "USD" });
+    
+    const timeToMins = (t) => {
+        if (!t) return null; 
+        let match = t.toLowerCase().replace(/\s/g, '').match(/^(\d{1,2}):?(\d{2})?(am|pm|a|p)?$/);
+        if (!match) return null; 
+        let h = parseInt(match[1]), m = parseInt(match[2] || 0), ampm = match[3];
+        if (h > 23 || m > 59) return null;
+        if (ampm) { if (ampm.startsWith('p') && h < 12) h += 12; if (ampm.startsWith('a') && h === 12) h = 0; }
+        
+        let totalMins = (h * 60) + m;
+        let remainder = totalMins % 10;
+        if (remainder < 5) { totalMins -= remainder; } 
+        else { totalMins += (10 - remainder); } 
+        
+        return totalMins;
+    };
+
+    /* --- APP LOGIC --- */
+    const shiftsContainer = document.getElementById("shiftsContainer");
+    const expensesContainer = document.getElementById("expensesContainer");
+    const rateIn = document.getElementById("hourlyRate");
+    const targetIn = document.getElementById("savingsTarget");
+    const taxToggle = document.getElementById("taxToggle");
+
+    function createShiftRow(data = {}) {
+      const row = document.createElement("div"); row.className = "list-row shift-layout";
+      row.innerHTML = `
+        <input type="text" class="s-date" placeholder="Mon 14" value="${data.date||''}">
+        <input type="text" class="s-in" placeholder="9:03 AM" value="${data.in||''}">
+        <input type="text" class="s-out" placeholder="5:00 PM" value="${data.out||''}">
+        <div class="calc-value s-earn">-</div>
+        <button class="danger-text remove-btn">✕</button>
+      `;
+      shiftsContainer.appendChild(row);
+      
+      const update = () => {
+        let i = timeToMins(row.querySelector('.s-in').value);
+        let o = timeToMins(row.querySelector('.s-out').value);
+        let earnDisplay = row.querySelector('.s-earn');
+        
+        if (i !== null && o !== null) {
+          let diff = o - i; if (diff < 0) diff += 24 * 60;
+          let earn = (diff / 60) * (parseFloat(rateIn.value) || 0);
+          if (taxToggle.checked) earn *= 0.85;
+          earnDisplay.textContent = fmtMoney(earn); row.dataset.earn = earn;
+        } else {
+          earnDisplay.textContent = "-"; row.dataset.earn = 0;
+        }
+        recalcAll();
+      };
+
+      row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', update));
+      row.querySelector('.remove-btn').addEventListener('click', () => { 
+        row.style.opacity = '0'; 
+        setTimeout(() => { row.remove(); recalcAll(); }, 300); 
+      });
+      update();
+    }
+
+    function createExpenseRow(data = {}) {
+      const row = document.createElement("div"); row.className = "list-row expense-layout";
+      row.innerHTML = `
+        <input type="text" class="e-desc" placeholder="Delivery/Essentials" value="${data.desc||''}">
+        <input type="number" step="0.01" class="e-amt" placeholder="0.00" value="${data.amt||''}">
+        <button class="danger-text remove-btn">✕</button>
+      `;
+      expensesContainer.appendChild(row);
+      row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalcAll));
+      row.querySelector('.remove-btn').addEventListener('click', () => { 
+        row.style.opacity = '0'; 
+        setTimeout(() => { row.remove(); recalcAll(); }, 300); 
+      });
+      recalcAll();
+    }
+
+    function recalcAll() {
+      if(!currentUser) return;
+      let totalEarned = 0, totalExp = 0;
+      
+      document.querySelectorAll('.shift-layout').forEach(row => { totalEarned += parseFloat(row.dataset.earn || 0); });
+      document.querySelectorAll('.expense-layout').forEach(row => { totalExp += parseFloat(row.querySelector('.e-amt').value || 0); });
+
+      let net = totalEarned - totalExp;
+      let target = parseFloat(targetIn.value) || 0;
+      
+      document.getElementById('dashNet').textContent = fmtMoney(net);
+      
+      let leftEl = document.getElementById('dashLeft');
+      if (net >= target) {
+        leftEl.textContent = "TARGET HIT!"; leftEl.style.color = "var(--success)";
+      } else {
+        leftEl.textContent = fmtMoney(target - net); leftEl.style.color = "var(--brand-cyan)";
+      }
+
+      let pct = target > 0 ? Math.min(100, Math.max(0, (net / target) * 100)) : 0;
+      let bar = document.getElementById('progressBar');
+      bar.style.width = pct + "%";
+      
+      if (pct > 0 && pct < 100) { bar.classList.add('active'); } 
+      else { bar.classList.remove('active'); }
+
+      document.getElementById('progressText').innerText = pct >= 100 ? "Goal Complete!" : `${pct.toFixed(1)}%`;
+
+      saveData();
+    }
+
+    function saveData() {
+      if(!currentUser) return;
+      const shifts = [...document.querySelectorAll('.shift-layout:not(.list-header)')].map(r => ({
+        date: r.querySelector('.s-date').value, in: r.querySelector('.s-in').value, out: r.querySelector('.s-out').value
+      }));
+      const exps = [...document.querySelectorAll('.expense-layout:not(.list-header)')].map(r => ({
+        desc: r.querySelector('.e-desc').value, amt: r.querySelector('.e-amt').value
+      }));
+      
+      dataDb[currentUser] = { rate: rateIn.value, target: targetIn.value, tax: taxToggle.checked, shifts, exps };
+      localStorage.setItem('fco_v26_data', JSON.stringify(dataDb));
+    }
+
+    function loadData() {
+      shiftsContainer.innerHTML = ""; expensesContainer.innerHTML = ""; 
+      let data = dataDb[currentUser];
+      if (data) {
+        rateIn.value = data.rate || "0"; targetIn.value = data.target || "0"; taxToggle.checked = data.tax || false;
+        if (data.shifts && data.shifts.length) data.shifts.forEach(s => createShiftRow(s)); else createShiftRow();
+        if (data.exps) data.exps.forEach(e => createExpenseRow(e));
+      } else {
+        rateIn.value = "0"; targetIn.value = "0"; taxToggle.checked = false;
+        createShiftRow(); 
+      }
+      recalcAll();
+    }
+
+    // Bindings
+    document.getElementById('addShiftBtn').addEventListener('click', () => createShiftRow());
+    document.getElementById('addExpenseBtn').addEventListener('click', () => createExpenseRow());
+    rateIn.addEventListener('input', () => { document.querySelectorAll('.s-in').forEach(el => el.dispatchEvent(new Event('input'))); });
+    taxToggle.addEventListener('change', () => { document.querySelectorAll('.s-in').forEach(el => el.dispatchEvent(new Event('input'))); });
+    targetIn.addEventListener('input', recalcAll);
+  </script>
+</body>
+</html>
